@@ -10,6 +10,8 @@ clone this repo somewhere
 recommend running the vagrant virtualbox guest additions auto-updater
 ```vagrant plugin install vagrant-vbguest```
 
+```vagrant box update```
+
 ```vagrant up```
 
 follow the instructions from there to test.
