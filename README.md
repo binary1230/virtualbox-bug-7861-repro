@@ -7,7 +7,7 @@ Install Vagrant, Virtualbox, etc.
 
 clone this repo somewhere
 
-recommend rnning the vagrant virtualbox guest additions auto-updater
+recommend running the vagrant virtualbox guest additions auto-updater
 ```vagrant plugin install vagrant-vbguest```
 
 ```vagrant up```
