@@ -7,6 +7,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+int error_count = 0; // hacky but whatever
+
 void setup(const char* basepath, const char* file_contents) {
     // 1) create a file in a new directory so it looks like this:  "<basepath>/subdir/file.txt"
     // 2) write file_contents into that file
@@ -32,10 +34,11 @@ int ensure_file_contents_valid(const char* filepath, const char* what_contents_s
     if (fd == -1) {
         printf("ERROR! Couldn't open file for reading: %s, reason was: ", filepath);
         perror("");
+        error_count++;
         return -1;
     }
 
-    // this is a dangerous-ish way to read a file, it works for us here though.
+    // this is not a great/sane/robust way to do this, but it works for us here
     char buf[1000];
     buf[0] = 0;
     ssize_t count = read(fd, buf, sizeof(buf));
@@ -43,13 +46,17 @@ int ensure_file_contents_valid(const char* filepath, const char* what_contents_s
 
     if (count <= 0) {
         printf("ERROR: nothing read from file '%s'?\n", filepath);
+        close(fd);
+        error_count++;
+        return -2;
     }
 
     close(fd);
 
     if (strcmp(buf, what_contents_should_be) != 0) {
-        printf("ERROR: file '%s' contents differ. file1: '%s', file2: '%s'\n", filepath, buf, what_contents_should_be);
-        return -2;
+        printf("ERROR: file '%s' contents differ. expected: '%s', actual: '%s'\n", filepath, buf, what_contents_should_be);
+        error_count++;
+        return -3;
     }
 
     return 0;
@@ -70,7 +77,7 @@ int main() {
     ensure_file_contents_valid("a0/subdir/file.txt", file_conents_A);
     ensure_file_contents_valid("a1/subdir/file.txt", file_conents_B);
 
-    printf("-----renaming (this is where the problems start if on vboxfs)------\n");
+    printf("-----renaming a1 to a2, a0 to a1 ------\n");
     rename("a1", "a2");
     rename("a0", "a1");
 
@@ -84,5 +91,11 @@ int main() {
     printf("----part3 test------\n");
     ensure_file_contents_valid("a2/subdir/file.txt", file_conents_B);
 
-    return 0;
+    if (error_count > 0) {
+        printf("TEST FAILED!\n");
+        return -1;
+    } else {
+        printf("TEST PASSED!\n");
+        return 0;
+    }
 }
