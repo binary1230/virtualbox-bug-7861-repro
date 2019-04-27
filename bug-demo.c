@@ -1,3 +1,8 @@
+/* Repro code for https://www.virtualbox.org/ticket/8761
+ * This is in C code form to minimize the number of system calls to reproduce
+ * It appears the issue is triggered after the rename() call */
+
+
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
