@@ -67,13 +67,38 @@ int ensure_file_contents_valid(const char* filepath, const char* what_contents_s
     return 0;
 }
 
+// super quick n dirty echo output to a file
+void echo(const char* contents, const char* filename) {
+      int fd = open(filename, O_WRONLY | O_CREAT, 0644);
+      write(fd, contents, strlen(contents));
+      close(fd);
+}
+
+void print_pid() {
+	pid_t pid = getpid();
+	printf("pid: %lun\n", pid);
+}
+
+void clear_inode_cache() {
+    echo("2", "/proc/sys/vm/drop_caches"); // kernel debug break
+}
+
 int main() {
+    int kernel_stuff = 0;
+
+    if (kernel_stuff) {
+      print_pid();
+      sleep(5);
+
+      // IGNORE
+      echo("g", "/proc/sysrq-trigger"); // kernel debug break
+   }
 
     // unrelated: set stdout to flush for better error messages
     setvbuf (stdout, NULL, _IONBF, BUFSIZ);
 
-    const char* file_conents_A = "file contents ABC";
-    const char* file_conents_B = "file contents XYZ";
+    const char* file_conents_A = "file contents: (1)";
+    const char* file_conents_B = "file contents: (2)";
 
     setup("a0", file_conents_A);
     setup("a1", file_conents_B);
@@ -81,6 +106,8 @@ int main() {
     printf("----part1 test------\n");
     ensure_file_contents_valid("a0/subdir/file.txt", file_conents_A);
     ensure_file_contents_valid("a1/subdir/file.txt", file_conents_B);
+
+    // clear_inode_cache();
 
     printf("-----renaming a1 to a2, a0 to a1 ------\n");
     rename("a1", "a2");
@@ -90,17 +117,30 @@ int main() {
     ensure_file_contents_valid("a1/subdir/file.txt", file_conents_A);
     ensure_file_contents_valid("a2/subdir/file.txt", file_conents_B);
 
+    // if cache cleared, everything past this point fails
+    // clear_inode_cache();
+    //ensure_file_contents_valid("a1/subdir/file.txt", file_conents_A);
+    //ensure_file_contents_valid("a2/subdir/file.txt", file_conents_B);
+
     printf("----deleting------\n");
     unlink("a1/subdir/file.txt");
 
-    printf("----part3 test------\n");
+    printf("----part3 test (expected: passes, actual: fail) ------\n");
     ensure_file_contents_valid("a2/subdir/file.txt", file_conents_B);
 
+
+    int do_final_test=0;
+    if (do_final_test) {
+      clear_inode_cache();
+      printf("----part4 test------ (expected/actual = pass after clearning inode cache)\n");
+      ensure_file_contents_valid("a2/subdir/file.txt", file_conents_B);
+    }
+
     if (error_count > 0) {
-        printf("TEST FAILED!\n");
+        printf("\n\n\n\nOVERALL: FAILURES HAPPENED!\n");
         return -1;
     } else {
-        printf("TEST PASSED!\n");
+        printf("\n\n\n\nOVERALL: EVERYTHING IS LOOKING GOOD: PASSED!\n");
         return 0;
     }
 }
